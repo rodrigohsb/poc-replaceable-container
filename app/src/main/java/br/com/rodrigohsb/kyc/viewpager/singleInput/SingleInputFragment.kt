@@ -3,13 +3,10 @@ package br.com.rodrigohsb.kyc.viewpager.singleInput
 import android.os.Bundle
 import android.support.constraint.ConstraintSet
 import android.support.v4.app.Fragment
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.Toast
 import br.com.rodrigohsb.kyc.viewpager.R
 import br.com.rodrigohsb.kyc.viewpager.domain.answer.DehydratedAnswer
 import br.com.rodrigohsb.kyc.viewpager.domain.question.DehydratedQuestion
@@ -17,6 +14,8 @@ import br.com.rodrigohsb.kyc.viewpager.domain.question.SingleInputQuestion
 import br.com.rodrigohsb.kyc.viewpager.manager.ContentInterface
 import br.com.rodrigohsb.kyc.viewpager.ui.MainActivity
 import br.com.rodrigohsb.kyc.viewpager.validate.Validator
+import com.jakewharton.rxbinding2.widget.RxTextView
+import io.reactivex.android.schedulers.AndroidSchedulers
 import kotlinx.android.synthetic.main.single_input.*
 
 /**
@@ -28,6 +27,8 @@ class SingleInputFragment: Fragment(), Validator, ContentInterface {
 
     private lateinit var question: SingleInputQuestion
 
+    private val validator = SingleInputValidator()
+
     companion object {
         fun newInstance(question: SingleInputQuestion): SingleInputFragment {
             val fragment = SingleInputFragment()
@@ -38,13 +39,16 @@ class SingleInputFragment: Fragment(), Validator, ContentInterface {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater,
+                              container: ViewGroup?,
+                              savedInstanceState: Bundle?)
+                              : View? {
         return inflater.inflate(R.layout.single_input, null)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
-        question = arguments!!.getParcelable<SingleInputQuestion>("question")
+        question = arguments!!.getParcelable("question")
 
         questionTitle.text = question.title
 
@@ -62,30 +66,19 @@ class SingleInputFragment: Fragment(), Validator, ContentInterface {
         set1.connect(editText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0)
         set1.applyTo(single_input_root)
 
-        editText.addTextChangedListener(object: TextWatcher{
-            override fun afterTextChanged(s: Editable) {
-                if(s.isEmpty()){
-                    (activity as MainActivity).disableNextButton()
-                    return
+        RxTextView
+            .textChanges(editText)
+            .map { charSequence -> !charSequence.isEmpty() }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ hasContent ->
+                when (hasContent){
+                    true -> (activity as MainActivity).enableNextButton()
+                    false -> (activity as MainActivity).disableNextButton()
                 }
-                (activity as MainActivity).enableNextButton()
-            }
-
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+            })
     }
 
-    override fun validate(): Boolean {
-        return if(editText.text.toString().isEmpty()){
-            Toast.makeText(activity,"Por favor, insira uma resposta válida", Toast.LENGTH_SHORT).show()
-            false
-        }
-        else{
-            true
-        }
-    }
+    override fun validate() = validator.isValid(editText.text.toString())
 
     override fun getAnswer() = DehydratedAnswer(editText.id.toString(),editText.text.toString())
 

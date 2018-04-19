@@ -14,6 +14,8 @@ import br.com.rodrigohsb.kyc.viewpager.manager.ContentInterface
 import br.com.rodrigohsb.kyc.viewpager.ui.MainActivity
 import kotlinx.android.synthetic.main.single_choice.*
 import br.com.rodrigohsb.kyc.viewpager.validate.Validator
+import com.jakewharton.rxbinding2.widget.RxRadioGroup
+import io.reactivex.android.schedulers.AndroidSchedulers
 
 /**
  * @rodrigohsb
@@ -55,20 +57,26 @@ class SingleChoiceFragment: Fragment(), Validator, ContentInterface {
             radioGroup.addView(rb)
         }
 
-        radioGroup.setOnCheckedChangeListener { group, checkedId ->
-            val rb = group.findViewById(checkedId) as RadioButton
+        RxRadioGroup
+            .checkedChanges(radioGroup)
+            .filter{ radioButtonId -> radioButtonId != -1 }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe ({
+                radioButtonId ->
 
-            answerId = rb.id.toString()
-            answerLabel = rb.text.toString()
+                val rb = radioGroup.findViewById<RadioButton>(radioButtonId)
 
-            atLeastOneHasBeenChecked = rb.isChecked
-            if(atLeastOneHasBeenChecked) {
-                (activity as MainActivity).enableNextButton()
-                return@setOnCheckedChangeListener
-            }
-            (activity as MainActivity).disableNextButton()
-        }
+                answerId = rb.id.toString()
+                answerLabel = rb.text.toString()
 
+                atLeastOneHasBeenChecked = rb.isChecked
+
+                if(atLeastOneHasBeenChecked) {
+                    (activity as MainActivity).enableNextButton()
+                    return@subscribe
+                }
+                (activity as MainActivity).disableNextButton()
+            })
     }
 
     override fun validate() = atLeastOneHasBeenChecked
