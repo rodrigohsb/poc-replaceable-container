@@ -47,21 +47,18 @@ class MainActivity : AppCompatActivity() {
 
         prevButton.setOnClickListener{
             proceedToPreviousQuestion()
+            content.removeAt(content.lastIndex)
 
         }
         nextButton.setOnClickListener{
             if(shouldShowNextQuestion()){
-
-                val contentInterface = frags[indicator] as ContentInterface
-                val question = contentInterface.getQuestion()
-                val answer = contentInterface.getAnswer()
-
-                content.add(Content(question, answer))
+                savePair()
                 proceedToNextQuestion()
             }
         }
 
         finishButton.setOnClickListener{
+            savePair()
             SummaryActivity.start(this, Summary(content))
             finish()
         }
@@ -81,6 +78,14 @@ class MainActivity : AppCompatActivity() {
             t -> t.printStackTrace()
         })
 
+    }
+
+    private fun savePair() {
+        val contentInterface = frags[indicator] as ContentInterface
+        val question = contentInterface.getQuestion()
+        val answer = contentInterface.getAnswer()
+
+        content.add(Content(question, answer))
     }
 
     fun disableNextButton() {

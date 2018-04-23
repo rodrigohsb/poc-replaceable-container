@@ -1,12 +1,10 @@
 package br.com.rodrigohsb.kyc.viewpager.singleInput
 
 import android.os.Bundle
-import android.support.constraint.ConstraintSet
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import br.com.rodrigohsb.kyc.viewpager.R
 import br.com.rodrigohsb.kyc.viewpager.domain.answer.DehydratedAnswer
 import br.com.rodrigohsb.kyc.viewpager.domain.question.DehydratedQuestion
@@ -23,11 +21,9 @@ import kotlinx.android.synthetic.main.single_input.*
  */
 class SingleInputFragment: Fragment(), Validator, ContentInterface {
 
-    private lateinit var editText: EditText
-
     private lateinit var question: SingleInputQuestion
 
-    private val validator = SingleInputValidator()
+    private val validator by lazy { SingleInputValidator() }
 
     companion object {
         fun newInstance(question: SingleInputQuestion): SingleInputFragment {
@@ -50,37 +46,26 @@ class SingleInputFragment: Fragment(), Validator, ContentInterface {
 
         question = arguments!!.getParcelable("question")
 
-        questionTitle.text = question.title
+        single_input_question.text = question.title
 
-        editText = layoutInflater.inflate(R.layout.comp_edittext, null) as EditText
-        editText.id = question.id.toInt()
-        editText.hint = question.hint
-
-        single_input_root.addView(editText)
-
-        val set1 = ConstraintSet()
-        set1.clone(single_input_root)
-        set1.connect(editText.id, ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 0)
-        set1.connect(editText.id, ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 0)
-        set1.connect(editText.id, ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 0)
-        set1.connect(editText.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 0)
-        set1.applyTo(single_input_root)
+        single_input_answer.id = question.id.toInt()
+        single_input_answer.hint = question.hint
 
         RxTextView
-            .textChanges(editText)
-            .map { charSequence -> !charSequence.isEmpty() }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ hasContent ->
-                when (hasContent){
-                    true -> (activity as MainActivity).enableNextButton()
-                    false -> (activity as MainActivity).disableNextButton()
-                }
-            })
+        .textChanges(single_input_answer)
+        .map { charSequence -> !charSequence.isEmpty() }
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe({ hasContent ->
+            when (hasContent){
+                true -> (activity as MainActivity).enableNextButton()
+                false -> (activity as MainActivity).disableNextButton()
+            }
+        })
     }
 
-    override fun validate() = validator.isValid(editText.text.toString())
+    override fun validate() = validator.isValid(single_input_answer.text.toString())
 
-    override fun getAnswer() = DehydratedAnswer(editText.id.toString(),editText.text.toString())
+    override fun getAnswer() = DehydratedAnswer(single_input_answer.id.toString(), single_input_answer.text.toString())
 
     override fun getQuestion() = DehydratedQuestion(question.id,question.title)
 }
